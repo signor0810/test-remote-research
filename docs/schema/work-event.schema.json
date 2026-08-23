@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.internal/schemas/work-event.schema.json",
+  "title": "WorkEvent",
+  "description": "跨 AI 工具 / Atlassian / Outlook / Git 的正規化工作事件。事件庫為 append-only；更正請寫入新事件並以 supersedes 指向舊事件。",
+  "type": "object",
+  "required": ["id", "ts", "source", "type", "title", "sensitivity"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "冪等識別碼：sha256(source + '|' + native_id)。重跑採集不得產生重複事件。"
+    },
+    "supersedes": {
+      "type": "string",
+      "description": "若本事件是對既有事件的更正，填入被取代事件的 id。"
+    },
+    "ts": { "type": "string", "format": "date-time", "description": "事件發生時間，需含時區。" },
+    "actor": { "type": "string", "description": "行為者識別（單人使用時可省略）。" },
+    "source": {
+      "type": "string",
+      "enum": ["cursor", "hermes", "sng-ap", "jira", "confluence", "outlook", "git", "manual"]
+    },
+    "type": {
+      "type": "string",
+      "enum": ["ai_session", "commit", "pr", "issue_transition", "doc_edit", "mail_thread", "meeting", "friction_note"]
+    },
+    "keys": {
+      "type": "object",
+      "description": "關聯鍵。jira 為主鍵；缺少時該事件會落入 unassigned 桶。",
+      "additionalProperties": false,
+      "properties": {
+        "jira": { "type": "array", "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9]+-[0-9]+$" } },
+        "epic": { "type": "string" },
+        "repo": { "type": "string" },
+        "branch": { "type": "string" },
+        "confluence_page_id": { "type": "string" }
+      }
+    },
+    "title": { "type": "string", "maxLength": 200, "description": "一行標題。跨敏感度邊界時，只有本欄與 keys/outcome 保證可攜。" },
+    "summary": { "type": "string", "description": "工具自動摘要或使用者收尾三行。可能含敏感內容，受 sensitivity 管制。" },
+    "artifacts": {
+      "type": "array",
+      "description": "可驗證的產出連結。週報中每則敘述都應對應至少一個 artifact，否則須標記為待確認。",
+      "items": {
+        "type": "object",
+        "required": ["kind", "url"],
+        "additionalProperties": false,
+        "properties": {
+          "kind": { "type": "string", "enum": ["pr", "commit", "doc", "jira", "mail", "file", "other"] },
+          "url": { "type": "string" },
+          "label": { "type": "string" }
+        }
+      }
+    },
+    "effort_min": { "type": "integer", "minimum": 0, "description": "估計投入分鐘數；AI session 可由起訖時間推得。" },
+    "outcome": { "type": "string", "enum": ["done", "wip", "blocked", "abandoned"] },
+    "friction": {
+      "type": "array",
+      "description": "當下記錄的摩擦點。這是月度自動化機會分析的唯一輸入來源。",
+      "items": {
+        "type": "object",
+        "required": ["kind"],
+        "additionalProperties": false,
+        "properties": {
+          "kind": { "type": "string", "enum": ["rework", "waiting", "manual-toil", "context-switch", "tool-gap"] },
+          "minutes": { "type": "integer", "minimum": 0 },
+          "note": { "type": "string", "maxLength": 300 },
+          "recurring": { "type": "boolean", "description": "是否為重複發生的模式；true 者在排行榜中加權。" }
+        }
+      }
+    },
+    "tool_usage": {
+      "type": "object",
+      "description": "配額追蹤，主要用於 hermes 的 200/月上限。",
+      "additionalProperties": false,
+      "properties": {
+        "model": { "type": "string" },
+        "requests": { "type": "integer", "minimum": 0 },
+        "quota_bucket": { "type": "string", "enum": ["hermes-monthly", "sng-ap", "cursor", "none"] }
+      }
+    },
+    "sensitivity": {
+      "type": "string",
+      "enum": ["public", "internal", "restricted"],
+      "default": "internal",
+      "description": "sng-ap 來源預設 internal。internal 以上的 summary 不得離開內部邊界；跨界時僅可攜出 title / keys / outcome。"
+    }
+  }
+}
