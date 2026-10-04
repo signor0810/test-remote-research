@@ -27,7 +27,8 @@ This repository is currently **empty** — no source code, configuration, or doc
 ```
 test-remote-research/
 ├── CLAUDE.md          # This file — AI assistant guidance
-└── (no other files yet)
+└── mods/
+    └── herdr-bridge/  # Claude Code mod: routes tools to other agents via herdr, tracks tokens
 ```
 
 Once files are added, document them here with their purpose.

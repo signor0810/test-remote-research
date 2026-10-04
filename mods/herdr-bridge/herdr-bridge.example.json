@@ -1,0 +1,35 @@
+{
+  "agents": {
+    "agy": { "transport": "herdr", "kind": "antigravity" },
+    "qwen": { "transport": "herdr", "kind": "pi", "startArgs": ["--model", "qwen3.8-27b"] },
+    "qwen-api": { "transport": "http", "baseUrl": "http://localhost:1234/v1", "model": "qwen3.8-27b", "maxTokens": 2048 },
+    "agy-once": { "transport": "exec", "argv": ["agy", "-p", "{prompt}"] }
+  },
+  "routes": [
+    {
+      "name": "web-search",
+      "tool": "WebSearch",
+      "agent": "agy",
+      "prompt": "Search the web to answer: {query}\nWrite to {out} in Markdown: a conclusion of at most 300 words, then one line per source: title - URL. Reply DONE when the file is written."
+    },
+    {
+      "name": "youtube",
+      "tool": "WebFetch",
+      "agent": "agy",
+      "urlPattern": "^https?://(www\\.|m\\.)?(youtube\\.com|youtu\\.be)/",
+      "prompt": "Watch this YouTube video: {url}\nAnswer: {question}\nInclude the key timestamps (mm:ss). At most 500 words. Write the answer to {out} in Markdown and reply DONE."
+    },
+    {
+      "name": "eda-report",
+      "tool": "Read",
+      "agent": "qwen",
+      "pathPattern": "\\.(rpt|log)$",
+      "minBytes": 200000,
+      "prompt": "Read {path}. It is an EDA tool report or log. Write to {out} in Markdown, at most 60 lines: the tool and stage; errors and warnings grouped by type, with counts; the worst violations (slack, path, endpoint); anything abnormal. Quote exact numbers. Reply DONE when the file is written."
+    }
+  ],
+  "timeoutMs": 300000,
+  "maxResultChars": 8000,
+  "maxInputChars": 200000,
+  "weights": { "input": 1, "output": 5, "cacheRead": 0.1, "cacheWrite": 1.25 }
+}

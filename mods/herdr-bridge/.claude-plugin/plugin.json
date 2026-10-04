@@ -1,0 +1,39 @@
+{
+  "name": "herdr-bridge",
+  "version": "0.1.0",
+  "description": "Route WebSearch, YouTube fetches and large reports to other agents (agy, pi, hermes, a local model) through herdr, and track Claude token usage to compare.",
+  "author": {
+    "name": "signor0810"
+  },
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "configPath": {
+      "type": "string",
+      "title": "Config file",
+      "description": "Path to the routing config (JSON). Empty: <project>/.claude/herdr-bridge.json, then ~/.claude/herdr-bridge.json.",
+      "default": ""
+    },
+    "mode": {
+      "type": "string",
+      "title": "Default routing mode",
+      "description": "on: routes apply. off: every tool runs natively; token tracking continues, for A/B comparison. /bridge on|off overrides it.",
+      "options": [
+        "on",
+        "off"
+      ],
+      "default": "on"
+    },
+    "dataDir": {
+      "type": "string",
+      "title": "Data directory",
+      "description": "Where the token ledger and agent hand-off files go. Empty: ~/.claude/herdr-bridge.",
+      "default": ""
+    },
+    "showBand": {
+      "type": "boolean",
+      "title": "Show the band above the prompt",
+      "description": "A one-line summary of this session's Claude tokens and delegations.",
+      "default": true
+    }
+  }
+}
